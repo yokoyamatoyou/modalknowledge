@@ -11,7 +11,6 @@ from typing import List, Dict, Any, Optional, Tuple
 import faiss
 import numpy as np
 import openai
-from PIL import Image
 
 from .utils import log_operation
 
