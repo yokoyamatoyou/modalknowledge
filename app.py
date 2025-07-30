@@ -64,9 +64,9 @@ def display_knowledge_base(vector_store: VectorStoreManager):
                     st.write(f"**チャンク:** {chunk['text']}")
                     # メタデータを日本語で表示
                     meta_display = {
-                        "ソースファイル": chunk['metadata'].get('ソースファイル', '不明'),
-                        "ページ番号": chunk['metadata'].get('ページ番号', 'N/A'),
-                        "種類": chunk['metadata'].get('種類', 'N/A'),
+                        "ソースファイル": chunk['metadata'].get('source_file', '不明'),
+                        "ページ番号": chunk['metadata'].get('page', 'N/A'),
+                        "種類": chunk['metadata'].get('type', 'N/A'),
                         "作成者": chunk['metadata'].get('author', '未設定'),
                         "有効期限": chunk['metadata'].get('expiration_date', '未設定'),
                         "AI要約": chunk['metadata'].get('ai_summary', 'なし'),
