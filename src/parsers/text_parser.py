@@ -34,3 +34,4 @@ def parse_text(file_path: str) -> list[str]:
         logger.info("Using default RecursiveCharacterTextSplitter.")
         splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
         return splitter.split_text(text)
+
