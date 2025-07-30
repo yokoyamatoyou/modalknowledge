@@ -13,6 +13,8 @@ import numpy as np
 import openai
 from PIL import Image
 
+from .utils import log_operation
+
 class VectorStoreManager:
     """Manages a vector store where each document has its own directory."""
 
@@ -68,6 +70,33 @@ class VectorStoreManager:
         response = self.client.embeddings.create(model="text-embedding-3-small", input=text)
         return np.array(response.data[0].embedding, dtype="float32")
 
+    def _match_filters(self, chunk: Dict[str, Any], filters: Optional[Dict[str, Any]]) -> bool:
+        """Return True if the chunk satisfies the filter conditions."""
+        if not filters:
+            return True
+
+        meta = chunk.get("metadata", {})
+        for key, value in filters.items():
+            if key == "expiration_date_gt":
+                exp = meta.get("expiration_date")
+                if exp and exp <= value:
+                    return False
+            elif key == "author":
+                if meta.get("author") != value:
+                    return False
+            elif key == "tag":
+                tags = meta.get("ai_tags", [])
+                if isinstance(value, str):
+                    if value not in tags:
+                        return False
+                else:
+                    if not any(v in tags for v in value):
+                        return False
+            else:
+                if meta.get(key) != value:
+                    return False
+        return True
+
     def add_document(self, original_path: Path, chunks: List[Dict], thumbnail_path: Optional[Path]) -> None:
         """Add a new document and its chunks to the knowledge base."""
         doc_id = str(uuid.uuid4())
@@ -104,6 +133,7 @@ class VectorStoreManager:
 
         self._save_index()
         self.documents[doc_id] = chunks
+        log_operation("add_document", {"doc_id": doc_id, "file": str(original_path)})
 
     def delete_document(self, doc_id: str) -> bool:
         """Delete a document and its associated data."""
@@ -123,6 +153,8 @@ class VectorStoreManager:
         shutil.rmtree(doc_dir)
         if doc_id in self.documents:
             del self.documents[doc_id]
+
+        log_operation("delete_document", {"doc_id": doc_id})
 
         return True
 
@@ -151,7 +183,8 @@ class VectorStoreManager:
                 continue
 
             chunk = doc_chunks[chunk_index]
-            # Apply filters here if needed (omitted for brevity, but logic is similar to before)
+            if not self._match_filters(chunk, filters):
+                continue
 
             chunk_with_score = chunk.copy()
             chunk_with_score["score"] = float(dist)

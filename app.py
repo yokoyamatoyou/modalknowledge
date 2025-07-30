@@ -78,12 +78,17 @@ def display_knowledge_base(vector_store: VectorStoreManager):
     if st.session_state.pending_delete:
         doc_id = st.session_state.pending_delete
         st.warning("ナレッジを削除しますか？")
+        pw = st.text_input("削除パスワード", type="password", key="delete_pw")
         col_del, col_cancel = st.columns(2)
         if col_del.button("はい", key="confirm_yes"):
-            vector_store.delete_document(doc_id)
-            st.session_state.pending_delete = None
-            st.success("削除が完了しました")
-            st.rerun()
+            required = os.environ.get("DELETE_PASSWORD")
+            if required and pw != required:
+                st.error("パスワードが一致しません")
+            else:
+                vector_store.delete_document(doc_id)
+                st.session_state.pending_delete = None
+                st.success("削除が完了しました")
+                st.rerun()
         if col_cancel.button("いいえ", key="confirm_no"):
             st.session_state.pending_delete = None
             st.rerun()
@@ -117,12 +122,36 @@ def main() -> None:
                         "author": "", "expiration_date": date.today(), "custom_metadata": []
                     }
                 with st.expander(f"ファイル: {file.name}"):
-                    # ... (GUI from previous step) ...
-                    st.session_state.metadata_map[file_id]['author'] = st.text_input("作成者", value=st.session_state.metadata_map[file_id]['author'], key=f"author_{file_id}")
-                    st.session_state.metadata_map[file_id]['expiration_date'] = st.date_input("有効期限", value=st.session_state.metadata_map[file_id]['expiration_date'], key=f"exp_date_{file_id}")
+                    st.session_state.metadata_map[file_id]['author'] = st.text_input(
+                        "作成者",
+                        value=st.session_state.metadata_map[file_id]['author'],
+                        key=f"author_{file_id}"
+                    )
+                    st.session_state.metadata_map[file_id]['expiration_date'] = st.date_input(
+                        "有効期限",
+                        value=st.session_state.metadata_map[file_id]['expiration_date'],
+                        key=f"exp_date_{file_id}"
+                    )
                     st.subheader("カスタムメタデータ")
-                    st.caption("例：項目名「プロジェクト名」、内容「次世代RAG開発」")
-                    # ... (rest of the custom metadata UI) ...
+                    st.caption("例：項目名『プロジェクト名』、内容『次世代RAG開発』")
+                    custom_list = st.session_state.metadata_map[file_id]['custom_metadata']
+                    remove_indices = []
+                    for idx, item in enumerate(custom_list):
+                        col_k, col_v, col_d = st.columns([3, 3, 1])
+                        col_k.text_input("キー", value=item['key'], key=f"disp_key_{file_id}_{idx}", disabled=True)
+                        col_v.text_input("値", value=item['value'], key=f"disp_val_{file_id}_{idx}", disabled=True)
+                        if col_d.button("削除", key=f"del_meta_{file_id}_{idx}"):
+                            remove_indices.append(idx)
+                    for idx in sorted(remove_indices, reverse=True):
+                        custom_list.pop(idx)
+                    new_key = st.text_input("キー", key=f"new_key_{file_id}")
+                    new_val = st.text_input("値", key=f"new_val_{file_id}")
+                    if st.button("追加", key=f"add_meta_{file_id}"):
+                        if new_key:
+                            custom_list.append({"key": new_key, "value": new_val})
+                            st.session_state[f"new_key_{file_id}"] = ""
+                            st.session_state[f"new_val_{file_id}"] = ""
+                            st.rerun()
 
         if st.button("選択したファイルをナレッジに登録"):
             if uploaded_files:
@@ -136,10 +165,14 @@ def main() -> None:
 
                         # Process and add to vector store
                         session_meta = st.session_state.metadata_map.get(file.file_id, {})
-                        # Convert date object to string before processing
-                        meta_for_processing = session_meta.copy()
+                        meta_for_processing = {
+                            "author": session_meta.get("author", ""),
+                            "expiration_date": session_meta.get("expiration_date"),
+                        }
                         if isinstance(meta_for_processing.get('expiration_date'), date):
                             meta_for_processing['expiration_date'] = meta_for_processing['expiration_date'].strftime("%Y-%m-%d")
+                        for item in session_meta.get('custom_metadata', []):
+                            meta_for_processing[item.get('key')] = item.get('value')
                         
                         chunks, thumb_path = main_processor.process_file(str(temp_path), meta_for_processing, client, TEMP_DIR)
                         if chunks:
@@ -159,6 +192,15 @@ def main() -> None:
         st.header("チャット")
         if "messages" not in st.session_state:
             st.session_state.messages = []
+        if "filter_author" not in st.session_state:
+            st.session_state.filter_author = ""
+        if "filter_tags" not in st.session_state:
+            st.session_state.filter_tags = []
+
+        with st.expander("検索オプション"):
+            st.session_state.filter_author = st.text_input("作成者で絞り込み", key="filter_author")
+            tag_str = st.text_input("タグで絞り込み(カンマ区切り)", key="filter_tag")
+            st.session_state.filter_tags = [t.strip() for t in tag_str.split(",") if t.strip()]
 
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
@@ -170,7 +212,12 @@ def main() -> None:
                 st.markdown(user_input)
 
             with st.spinner("考え中..."):
-                result = rag_engine.answer_question(user_input)
+                filters = {}
+                if st.session_state.filter_author:
+                    filters["author"] = st.session_state.filter_author
+                if st.session_state.filter_tags:
+                    filters["tag"] = st.session_state.filter_tags
+                result = rag_engine.answer_question(user_input, filters)
                 answer = result.get("answer", "申し訳ありません、回答を生成できませんでした。")
                 sources = result.get("sources", [])
                 

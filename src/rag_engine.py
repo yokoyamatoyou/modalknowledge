@@ -28,10 +28,13 @@ class RAGEngine:
             sections.append(f"[source: {source} page: {page}]\n{text}")
         return "\n\n".join(sections)
 
-    def answer_question(self, question: str) -> Dict[str, object]:
+    def answer_question(self, question: str, filters: Dict[str, object] | None = None) -> Dict[str, object]:
         """Answer a question using current knowledge base."""
         today = date.today().strftime("%Y-%m-%d")
-        docs = self.vector_store.search(question, filters={"expiration_date_gt": today})
+        search_filters = {"expiration_date_gt": today}
+        if filters:
+            search_filters.update(filters)
+        docs = self.vector_store.search(question, filters=search_filters)
         if not docs:
             return {"answer": "ナレッジベースに情報がありません", "sources": []}
 
