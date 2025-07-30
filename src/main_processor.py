@@ -88,7 +88,7 @@ def process_file(
     path = Path(file_path)
     ext = path.suffix.lower()
     base_meta = metadata.copy()
-    base_meta["ソースファイル"] = path.name
+    base_meta["source_file"] = path.name
 
     results: List[Dict] = []
     thumbnail_path: Optional[Path] = None
@@ -116,16 +116,16 @@ def process_file(
             texts = text_parser.parse_text(file_path)
             for i, chunk_text in enumerate(texts):
                 meta = base_meta.copy()
-                meta.update({"ページ番号": i + 1, "種類": "テキスト"})
-                meta.update(ai_meta) # Add AI metadata
+                meta.update({"page": i + 1, "type": "text"})
+                meta.update(ai_meta)  # Add AI metadata
                 results.append({"text": chunk_text, "metadata": meta})
 
         elif ext in (".pdf", ".docx"):
             texts, images = doc_parser.parse_document(file_path)
             for i, chunk_text in enumerate(texts):
                 meta = base_meta.copy()
-                meta.update({"ページ番号": i + 1, "種類": "テキスト"})
-                meta.update(ai_meta) # Add AI metadata
+                meta.update({"page": i + 1, "type": "text"})
+                meta.update(ai_meta)  # Add AI metadata
                 results.append({"text": chunk_text, "metadata": meta})
 
             for img_data in images:
@@ -134,7 +134,7 @@ def process_file(
                     desc = image_parser.parse_image(img_bytes, client)
                     img_ai_meta = generate_ai_metadata(desc, client)
                     meta = base_meta.copy()
-                    meta.update({"ページ番号": img_data.get("page_number", 0), "種類": "ドキュメント内画像"})
+                    meta.update({"page": img_data.get("page_number", 0), "type": "document_image"})
                     meta.update(img_ai_meta)
                     results.append({"text": desc, "metadata": meta})
 
@@ -142,7 +142,7 @@ def process_file(
             thumbnail_path = create_thumbnail(path, temp_dir)
             desc = full_text_for_ai 
             meta = base_meta.copy()
-            meta.update({"ページ番号": 1, "種類": "画像"})
+            meta.update({"page": 1, "type": "image"})
             meta.update(ai_meta)
             if thumbnail_path:
                 meta['thumbnail_path'] = str(thumbnail_path.relative_to(temp_dir.parent))
