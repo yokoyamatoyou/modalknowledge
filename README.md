@@ -3,9 +3,14 @@
 このリポジトリは、複数形式のドキュメントを一元管理するマルチモーダルRAGシステムのサンプル実装です。
 
 ## ディレクトリ構成
-- `./` - Streamlit アプリとコアモジュール
-- `knowledge_gpt_app/` - 既存のナレッジ検索ツール（参考実装）
-- `mm_kb_builder/` - 画像やCADデータ取り込み用のユーティリティ
+- `app.py` - Streamlit アプリ本体
+- `pages/` - 追加のUIページ
+- `src/` - コアモジュール
+  - `parsers/` - ファイル解析ロジック
+  - `main_processor.py` - アップロード処理のエントリ
+  - `vector_store.py` - ベクトルストア管理
+  - `rag_engine.py` - RAG エンジン
+  - `utils.py` - 補助関数
 
 ## 使用方法
 1. 依存ライブラリをインストールします。
