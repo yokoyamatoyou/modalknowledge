@@ -30,6 +30,10 @@ TEMP_DIR = Path("uploaded_temp")
 # --- UI関数 ---
 def display_knowledge_base(vector_store: VectorStoreManager):
     st.header("登録済みナレッジ")
+
+    if 'pending_delete' not in st.session_state:
+        st.session_state.pending_delete = None
+
     if not vector_store.documents:
         st.info("現在、登録されているナレッジはありません。")
         return
@@ -51,7 +55,7 @@ def display_knowledge_base(vector_store: VectorStoreManager):
                         st.image(f.read(), width=100)
             with col2:
                 if st.button("削除", key=f"delete_{doc_id}", type="primary"):
-                    vector_store.delete_document(doc_id)
+                    st.session_state.pending_delete = doc_id
                     st.rerun()
 
             with st.expander("詳細を表示"):
@@ -69,6 +73,20 @@ def display_knowledge_base(vector_store: VectorStoreManager):
                         "AIタグ": chunk['metadata'].get('ai_tags', [])
                     }
                     st.json(meta_display)
+
+    # --- 削除確認モーダル ---
+    if st.session_state.pending_delete:
+        doc_id = st.session_state.pending_delete
+        st.warning("ナレッジを削除しますか？")
+        col_del, col_cancel = st.columns(2)
+        if col_del.button("はい", key="confirm_yes"):
+            vector_store.delete_document(doc_id)
+            st.session_state.pending_delete = None
+            st.success("削除が完了しました")
+            st.rerun()
+        if col_cancel.button("いいえ", key="confirm_no"):
+            st.session_state.pending_delete = None
+            st.rerun()
 
 # --- メイン処理 ---
 def main() -> None:
