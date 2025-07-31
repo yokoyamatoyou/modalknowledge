@@ -198,7 +198,7 @@ def main() -> None:
             st.session_state.filter_tags = []
 
         with st.expander("検索オプション"):
-            st.session_state.filter_author = st.text_input("作成者で絞り込み", key="filter_author")
+            st.text_input("作成者で絞り込み", key="filter_author")
             tag_str = st.text_input("タグで絞り込み(カンマ区切り)", key="filter_tag")
             st.session_state.filter_tags = [t.strip() for t in tag_str.split(",") if t.strip()]
 
