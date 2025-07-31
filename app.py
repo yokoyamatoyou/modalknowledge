@@ -227,17 +227,31 @@ def main() -> None:
 
             with st.spinner("考え中..."):
                 filters = {}
+
+                # **修正**: フィルタの適用を明確化
                 if st.session_state.filter_author:
                     filters["author"] = st.session_state.filter_author
                 if st.session_state.filter_tags:
                     filters["tag"] = st.session_state.filter_tags
                 if st.session_state.filter_keyword:
                     filters["keyword"] = st.session_state.filter_keyword
+
+                # **重要**: ユーザーが明示的に日付範囲を指定した場合のみ適用
+                # そうでなければRAGエンジンで自動的に期限切れフィルタが適用される
                 if st.session_state.use_date_filter:
                     start = st.session_state.filter_start_date.strftime("%Y-%m-%d")
                     end = st.session_state.filter_end_date.strftime("%Y-%m-%d")
                     filters["expiration_date_start"] = start
                     filters["expiration_date_end"] = end
+                    # 明示的な日付範囲が指定された場合は、自動の期限切れフィルタを無効化
+                    print(f"[DEBUG] ユーザー指定の日付範囲: {start} から {end}")
+                else:
+                    print("[DEBUG] 日付フィルタ未指定 - RAGエンジンで自動期限切れフィルタが適用されます")
+
+                # **デバッグ情報の表示**
+                if filters:
+                    st.info(f"適用フィルタ: {filters}")
+
                 result = rag_engine.answer_question(user_input, filters)
                 answer = result.get("answer", "申し訳ありません、回答を生成できませんでした。")
                 sources = result.get("sources", [])
