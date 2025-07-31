@@ -89,36 +89,57 @@ class VectorStoreManager:
 
         meta = chunk.get("metadata", {})
         text = chunk.get("text", "")
+
+        # **デバッグログを追加**
+        print(f"[DEBUG] チャンクのメタデータ: {meta}")
+        print(f"[DEBUG] 適用中のフィルタ: {filters}")
+
         for key, value in filters.items():
             if key == "expiration_date_gt":
                 exp = meta.get("expiration_date")
-                if exp and exp <= value:
+                print(f"[DEBUG] 有効期限チェック: {exp} > {value}")
+                if not exp:
+                    # 有効期限が設定されていない場合は除外
+                    print(f"[DEBUG] 有効期限未設定のため除外")
+                    return False
+                # 文字列での日付比較（YYYY-MM-DD形式を前提）
+                if exp <= value:
+                    print(f"[DEBUG] 期限切れのため除外: {exp} <= {value}")
                     return False
             elif key == "expiration_date_start":
                 exp = meta.get("expiration_date")
+                print(f"[DEBUG] 開始日チェック: {exp} >= {value}")
                 if exp and exp < value:
                     return False
             elif key == "expiration_date_end":
                 exp = meta.get("expiration_date")
+                print(f"[DEBUG] 終了日チェック: {exp} <= {value}")
                 if exp and exp > value:
                     return False
             elif key == "author":
                 if meta.get("author") != value:
+                    print(f"[DEBUG] 作成者不一致: {meta.get('author')} != {value}")
                     return False
             elif key == "tag":
                 tags = meta.get("ai_tags", [])
                 if isinstance(value, str):
                     if value not in tags:
+                        print(f"[DEBUG] タグ不一致: {value} not in {tags}")
                         return False
                 else:
                     if not any(v in tags for v in value):
+                        print(f"[DEBUG] タグ不一致: {value} not in {tags}")
                         return False
             elif key == "keyword":
                 if value.lower() not in text.lower():
+                    print(f"[DEBUG] キーワード不一致: {value} not in text")
                     return False
             else:
                 if meta.get(key) != value:
+                    print(f"[DEBUG] メタデータ不一致: {meta.get(key)} != {value}")
                     return False
+
+        print(f"[DEBUG] フィルタ条件をすべて満たしています")
         return True
 
     def add_document(self, original_path: Path, chunks: List[Dict], thumbnail_path: Optional[Path]) -> None:
