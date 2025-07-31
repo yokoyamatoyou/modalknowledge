@@ -196,11 +196,25 @@ def main() -> None:
             st.session_state.filter_author = ""
         if "filter_tags" not in st.session_state:
             st.session_state.filter_tags = []
+        if "filter_keyword" not in st.session_state:
+            st.session_state.filter_keyword = ""
+        if "use_date_filter" not in st.session_state:
+            st.session_state.use_date_filter = False
+        if "filter_start_date" not in st.session_state:
+            st.session_state.filter_start_date = date.today()
+        if "filter_end_date" not in st.session_state:
+            st.session_state.filter_end_date = date.today()
 
         with st.expander("検索オプション"):
             st.text_input("作成者で絞り込み", key="filter_author")
             tag_str = st.text_input("タグで絞り込み(カンマ区切り)", key="filter_tag")
             st.session_state.filter_tags = [t.strip() for t in tag_str.split(",") if t.strip()]
+            st.text_input("キーワード", key="filter_keyword")
+            st.checkbox("有効期限で範囲指定", key="use_date_filter")
+            if st.session_state.use_date_filter:
+                col_s, col_e = st.columns(2)
+                col_s.date_input("開始日", key="filter_start_date")
+                col_e.date_input("終了日", key="filter_end_date")
 
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
@@ -217,6 +231,13 @@ def main() -> None:
                     filters["author"] = st.session_state.filter_author
                 if st.session_state.filter_tags:
                     filters["tag"] = st.session_state.filter_tags
+                if st.session_state.filter_keyword:
+                    filters["keyword"] = st.session_state.filter_keyword
+                if st.session_state.use_date_filter:
+                    start = st.session_state.filter_start_date.strftime("%Y-%m-%d")
+                    end = st.session_state.filter_end_date.strftime("%Y-%m-%d")
+                    filters["expiration_date_start"] = start
+                    filters["expiration_date_end"] = end
                 result = rag_engine.answer_question(user_input, filters)
                 answer = result.get("answer", "申し訳ありません、回答を生成できませんでした。")
                 sources = result.get("sources", [])

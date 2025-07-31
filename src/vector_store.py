@@ -75,10 +75,19 @@ class VectorStoreManager:
             return True
 
         meta = chunk.get("metadata", {})
+        text = chunk.get("text", "")
         for key, value in filters.items():
             if key == "expiration_date_gt":
                 exp = meta.get("expiration_date")
                 if exp and exp <= value:
+                    return False
+            elif key == "expiration_date_start":
+                exp = meta.get("expiration_date")
+                if exp and exp < value:
+                    return False
+            elif key == "expiration_date_end":
+                exp = meta.get("expiration_date")
+                if exp and exp > value:
                     return False
             elif key == "author":
                 if meta.get("author") != value:
@@ -91,6 +100,9 @@ class VectorStoreManager:
                 else:
                     if not any(v in tags for v in value):
                         return False
+            elif key == "keyword":
+                if value.lower() not in text.lower():
+                    return False
             else:
                 if meta.get(key) != value:
                     return False

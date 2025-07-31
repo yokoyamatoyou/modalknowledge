@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import date
 from typing import List, Dict
 
 import openai
@@ -30,10 +29,7 @@ class RAGEngine:
 
     def answer_question(self, question: str, filters: Dict[str, object] | None = None) -> Dict[str, object]:
         """Answer a question using current knowledge base."""
-        today = date.today().strftime("%Y-%m-%d")
-        search_filters = {"expiration_date_gt": today}
-        if filters:
-            search_filters.update(filters)
+        search_filters = filters or {}
         docs = self.vector_store.search(question, filters=search_filters)
         if not docs:
             return {"answer": "ナレッジベースに情報がありません", "sources": []}
