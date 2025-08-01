@@ -10,6 +10,8 @@ from typing import List, Dict, Any, Optional, Tuple
 import hashlib
 import logging
 
+logging.basicConfig(level=logging.INFO)
+
 import faiss
 import numpy as np
 import openai
@@ -91,55 +93,55 @@ class VectorStoreManager:
         text = chunk.get("text", "")
 
         # **デバッグログを追加**
-        print(f"[DEBUG] チャンクのメタデータ: {meta}")
-        print(f"[DEBUG] 適用中のフィルタ: {filters}")
+        logger.debug("チャンクのメタデータ: %s", meta)
+        logger.debug("適用中のフィルタ: %s", filters)
 
         for key, value in filters.items():
             if key == "expiration_date_gt":
                 exp = meta.get("expiration_date")
-                print(f"[DEBUG] 有効期限チェック: {exp} > {value}")
+                logger.debug("有効期限チェック: %s > %s", exp, value)
                 if not exp:
                     # 有効期限が設定されていない場合は除外
-                    print(f"[DEBUG] 有効期限未設定のため除外")
+                    logger.debug("有効期限未設定のため除外")
                     return False
                 # 文字列での日付比較（YYYY-MM-DD形式を前提）
                 if exp <= value:
-                    print(f"[DEBUG] 期限切れのため除外: {exp} <= {value}")
+                    logger.debug("期限切れのため除外: %s <= %s", exp, value)
                     return False
             elif key == "expiration_date_start":
                 exp = meta.get("expiration_date")
-                print(f"[DEBUG] 開始日チェック: {exp} >= {value}")
+                logger.debug("開始日チェック: %s >= %s", exp, value)
                 if exp and exp < value:
                     return False
             elif key == "expiration_date_end":
                 exp = meta.get("expiration_date")
-                print(f"[DEBUG] 終了日チェック: {exp} <= {value}")
+                logger.debug("終了日チェック: %s <= %s", exp, value)
                 if exp and exp > value:
                     return False
             elif key == "author":
                 if meta.get("author") != value:
-                    print(f"[DEBUG] 作成者不一致: {meta.get('author')} != {value}")
+                    logger.debug("作成者不一致: %s != %s", meta.get('author'), value)
                     return False
             elif key == "tag":
                 tags = meta.get("ai_tags", [])
                 if isinstance(value, str):
                     if value not in tags:
-                        print(f"[DEBUG] タグ不一致: {value} not in {tags}")
+                        logger.debug("タグ不一致: %s not in %s", value, tags)
                         return False
                 else:
                     if not any(v in tags for v in value):
-                        print(f"[DEBUG] タグ不一致: {value} not in {tags}")
+                        logger.debug("タグ不一致: %s not in %s", value, tags)
                         return False
             elif key == "keyword":
                 if value.lower() not in text.lower():
-                    print(f"[DEBUG] キーワード不一致: {value} not in text")
+                    logger.debug("キーワード不一致: %s not in text", value)
                     return False
             else:
                 if meta.get(key) != value:
-                    print(f"[DEBUG] メタデータ不一致: {meta.get(key)} != {value}")
+                    logger.debug("メタデータ不一致: %s != %s", meta.get(key), value)
                     return False
 
-        print(f"[DEBUG] フィルタ条件をすべて満たしています")
+        logger.debug("フィルタ条件をすべて満たしています")
         return True
 
     def add_document(self, original_path: Path, chunks: List[Dict], thumbnail_path: Optional[Path]) -> None:
