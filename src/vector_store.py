@@ -240,3 +240,17 @@ class VectorStoreManager:
             seen_mappings.add(mapping)
 
         return results
+
+    def export_all(self, export_path: str) -> None:
+        """Export the entire knowledge base to a JSON Lines file."""
+        export_file = Path(export_path)
+        export_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(export_file, "w", encoding="utf-8") as f:
+            for doc_id, chunks in self.documents.items():
+                for chunk in chunks:
+                    record = {
+                        "doc_id": doc_id,
+                        "text": chunk.get("text", ""),
+                        "metadata": chunk.get("metadata", {}),
+                    }
+                    f.write(json.dumps(record, ensure_ascii=False) + "\n")
