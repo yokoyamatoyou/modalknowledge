@@ -45,7 +45,7 @@ def generate_ai_metadata(content: str, client: openai.Client) -> dict:
 """
     try:
         response = client.chat.completions.create(
-            model="gpt-4-turbo",
+            model="gpt-4.1",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
             response_format={"type": "json_object"},
