@@ -6,8 +6,13 @@ from datetime import date
 from typing import List, Dict
 
 import openai
+import logging
 
 from .vector_store import VectorStoreManager
+
+logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 
 class RAGEngine:
@@ -37,14 +42,14 @@ class RAGEngine:
         if "expiration_date_start" not in search_filters and "expiration_date_end" not in search_filters:
             today = date.today().strftime("%Y-%m-%d")
             search_filters["expiration_date_gt"] = today
-            print(f"[DEBUG] 期限切れフィルタ適用: {today} より後の有効期限のみ検索")
+            logger.debug("期限切れフィルタ適用: %s より後の有効期限のみ検索", today)
 
         docs = self.vector_store.search(question, filters=search_filters)
 
         # **デバッグログを追加**
-        print(f"[DEBUG] 検索クエリ: {question}")
-        print(f"[DEBUG] 適用フィルタ: {search_filters}")
-        print(f"[DEBUG] 検索結果数: {len(docs)}")
+        logger.debug("検索クエリ: %s", question)
+        logger.debug("適用フィルタ: %s", search_filters)
+        logger.debug("検索結果数: %s", len(docs))
 
         if not docs:
             return {"answer": "ナレッジベースに情報がありません。登録済みナレッジの有効期限を確認してください。", "sources": []}
@@ -63,7 +68,7 @@ class RAGEngine:
             )
             answer = response.choices[0].message.content.strip()
         except openai.OpenAIError as e:
-            print(f"[DEBUG] OpenAI API エラー: {e}")
+            logger.error("OpenAI API エラー: %s", e)
             answer = "回答生成中にエラーが発生しました"
 
         sources = [doc.get("metadata", {}) for doc in docs]
