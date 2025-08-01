@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def parse_image(image_bytes: bytes, client: openai.Client, surrounding_text: str = "") -> str:
-    """Describe an image using GPT-4o-mini.
+    """Describe an image using GPT-4.1-mini.
 
     Parameters
     ----------
@@ -31,7 +31,7 @@ def parse_image(image_bytes: bytes, client: openai.Client, surrounding_text: str
     try:
         b64 = base64.b64encode(image_bytes).decode()
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[
                 {
                     "role": "system",
