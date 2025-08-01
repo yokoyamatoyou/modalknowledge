@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import date
 from typing import List, Dict
 
 import openai
@@ -37,12 +36,9 @@ class RAGEngine:
         """Answer a question using current knowledge base."""
         search_filters = filters or {}
 
-        # **重要な修正**: 期限切れフィルタを自動適用（設計書通り）
-        # ただし、ユーザーが明示的に日付範囲を指定している場合は除く
-        if "expiration_date_start" not in search_filters and "expiration_date_end" not in search_filters:
-            today = date.today().strftime("%Y-%m-%d")
-            search_filters["expiration_date_gt"] = today
-            logger.debug("期限切れフィルタ適用: %s より後の有効期限のみ検索", today)
+        # 日付フィルタが指定されていない場合は、全てのナレッジを対象に検索する
+        if not any(key.startswith("expiration_date") for key in search_filters):
+            logger.debug("日付フィルタ未指定のため、全期間から検索します")
 
         docs = self.vector_store.search(question, filters=search_filters)
 
@@ -71,6 +67,10 @@ class RAGEngine:
             logger.error("OpenAI API エラー: %s", e)
             answer = "回答生成中にエラーが発生しました"
 
-        sources = [doc.get("metadata", {}) for doc in docs]
+        # return both metadata and document id for referencing in the UI
+        sources = [
+            {"metadata": doc.get("metadata", {}), "doc_id": doc.get("doc_id")}
+            for doc in docs
+        ]
         return {"answer": answer, "sources": sources}
 
