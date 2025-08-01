@@ -5,6 +5,7 @@
 ## ディレクトリ構成
 - `app.py` - Streamlit アプリ本体
 - `pages/` - 追加のUIページ
+  - `operation_history.py` - 操作履歴の表示
 - `src/` - コアモジュール
   - `parsers/` - ファイル解析ロジック
   - `main_processor.py` - アップロード処理のエントリ
